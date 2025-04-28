@@ -6,19 +6,29 @@ import User from "../models/user.js";
 const REGISTER_USER = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-  
-
+    
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Please fill all fields" });
     }
-    const id = uuidv4();
+    if(!email.includes("@")) {
+      return res.status(400).json({message: "Email must contain @"});
+    }
+    if(password.length <6){
+      return res.status(400).json({message: "Password must be at least 6 characters"});
+    }
+    if(!/\d/.test(password)) {
+      return res.status(400).json({message: "Password must contain at least one number"});
+    }
 
+    const fixedName = name.charAt(0).toUpperCase() + name.slice(1);
+
+    const id = uuidv4();
     const salt = bcryptjs.genSaltSync(10);
     const passwordHash = bcryptjs.hashSync(password, salt);
 
     const newUser = new User({
       id,
-      name,
+      name: fixedName,
       email,
       password: passwordHash,
       bought_tickets: [],
@@ -54,12 +64,12 @@ const LOGIN_USER = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: "Bad email or password" });
+      return res.status(401).json({ message: "Bad email or password" });
     }
 
     const passwordMatch = bcryptjs.compareSync(password, user.password);
     if (!passwordMatch) {
-      return res.status(404).json({ message: "Bad email or password" });
+      return res.status(401).json({ message: "Bad email or password" });
     }
 
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
