@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
+import Ticket from "../models/ticket.js";
 
 const REGISTER_USER = async (req, res) => {
   try {
@@ -153,7 +154,9 @@ const GET_USER_BY_ID = async (req, res) => {
     const userById = await User.findOne({ id: id });
 
     if (!userById) {
-      return res.status(404).json({ message: "User with this id does not exist" });
+      return res
+        .status(404)
+        .json({ message: "User with this id does not exist" });
     }
     res.status(200).json(userById);
   } catch (error) {
@@ -162,10 +165,55 @@ const GET_USER_BY_ID = async (req, res) => {
   }
 };
 
+const BUY_TICKET = async (req, res) => {
+  try {
+    // paiimu userio ir bilieto id
+    const { user_id, ticket_id } = req.body;
+
+    // 1. Ar Useris egzistuoja
+    const user = await User.findOne({ id: user_id });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    // 2. Ar bilietas egzistuoja
+    const ticket = await Ticket.findOne({ id: ticket_id });
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    // 3. Ar vartotojas turi pankamai saibu
+
+    if (user.money_balance < ticket.ticket_price) {
+      return res.status(400).json({ message: "Not enough funds" });
+    }
+    // 4. Pridedu Ticket_ID prie User
+    user.bought_tickets.push(ticket.id);
+
+    // 5. Atimu ticket kaina is balanso
+    user.money_balance -= ticket.ticket_price;
+
+    // 6. isaugau atnaujinta vartotoja
+
+    await user.save();
+
+    // 7. grazinu atsakyma
+    res.status(200).json({
+      message: "Ticket succesfully purchased",
+      updated_user: user,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
 export {
   REGISTER_USER,
   LOGIN_USER,
   GET_NEW_JWT_TOKEN,
   GET_ALL_USERS,
   GET_USER_BY_ID,
+  BUY_TICKET,
 };
