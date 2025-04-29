@@ -103,34 +103,69 @@ const LOGIN_USER = async (req, res) => {
 };
 
 const GET_NEW_JWT_TOKEN = async (req, res) => {
-  try { 
-  const { refreshToken } = req.body;
+  try {
+    const { refreshToken } = req.body;
 
-  if (!refreshToken) {
-    return res.status(400).json({ message: "Please LogIn again" });
-  }
+    if (!refreshToken) {
+      return res.status(400).json({ message: "Please LogIn again" });
+    }
 
-  jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(400).json({ message: "Invalid or expired refresh token" });
+    jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, (err, decoded) => {
+      if (err) {
+        return res
+          .status(400)
+          .json({ message: "Invalid or expired refresh token" });
       }
 
-    const newToken = jwt.sign({ 
-      id: decoded.id }, 
-      process.env.JWT_SECRET, 
-      {expiresIn: "2h",}
-    );
+      const newToken = jwt.sign(
+        {
+          id: decoded.id,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "2h" }
+      );
 
-    res.status(200).json({
-      message: "New JWT token generated",
-      token: newToken,
-      refreshToken: refreshToken,
+      res.status(200).json({
+        message: "New JWT token generated",
+        token: newToken,
+        refreshToken: refreshToken,
+      });
     });
-  });
-}catch (error) {
-  console.error(error);
-  res.status(500).json({message: "Server Error"})
-}
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
 };
 
-export { REGISTER_USER, LOGIN_USER, GET_NEW_JWT_TOKEN, };
+const GET_ALL_USERS = async (req, res) => {
+  try {
+    const users = await User.find().sort({ name: 1 });
+    res.status(200).json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const GET_USER_BY_ID = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userById = await User.findOne({ id: id });
+
+    if (!userById) {
+      return res.status(404).json({ message: "User with this id does not exist" });
+    }
+    res.status(200).json(userById);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export {
+  REGISTER_USER,
+  LOGIN_USER,
+  GET_NEW_JWT_TOKEN,
+  GET_ALL_USERS,
+  GET_USER_BY_ID,
+};
