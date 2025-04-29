@@ -6,18 +6,22 @@ import User from "../models/user.js";
 const REGISTER_USER = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    
+
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Please fill all fields" });
     }
-    if(!email.includes("@")) {
-      return res.status(400).json({message: "Email must contain @"});
+    if (!email.includes("@")) {
+      return res.status(400).json({ message: "Email must contain @" });
     }
-    if(password.length <6){
-      return res.status(400).json({message: "Password must be at least 6 characters"});
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
     }
-    if(!/\d/.test(password)) {
-      return res.status(400).json({message: "Password must contain at least one number"});
+    if (!/\d/.test(password)) {
+      return res
+        .status(400)
+        .json({ message: "Password must contain at least one number" });
     }
 
     const fixedName = name.charAt(0).toUpperCase() + name.slice(1);
@@ -40,9 +44,13 @@ const REGISTER_USER = async (req, res) => {
     const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, {
       expiresIn: "2h",
     });
-    const refreshToken = jwt.sign({ id: newUser.id },process.env.JWT_REFRESH_SECRET,{
+    const refreshToken = jwt.sign(
+      { id: newUser.id },
+      process.env.JWT_REFRESH_SECRET,
+      {
         expiresIn: "1d",
-      });
+      }
+    );
 
     res.status(200).json({
       message: "Your registration was successfully",
@@ -75,20 +83,54 @@ const LOGIN_USER = async (req, res) => {
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
       expiresIn: "2h",
     });
-    const refreshToken = jwt.sign({ id: user.id },process.env.JWT_REFRESH_SECRET,{
-      expiresIn: "1d",
-      });
+    const refreshToken = jwt.sign(
+      { id: user.id },
+      process.env.JWT_REFRESH_SECRET,
+      {
+        expiresIn: "1d",
+      }
+    );
 
     res.status(200).json({
       message: "LogIn successfully ",
       token,
       refreshToken,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error!" });
   }
 };
 
-export { REGISTER_USER, LOGIN_USER };
+const GET_NEW_JWT_TOKEN = async (req, res) => {
+  try { 
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(400).json({ message: "Please LogIn again" });
+  }
+
+  jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(400).json({ message: "Invalid or expired refresh token" });
+      }
+
+    const newToken = jwt.sign({ 
+      id: decoded.id }, 
+      process.env.JWT_SECRET, 
+      {expiresIn: "2h",}
+    );
+
+    res.status(200).json({
+      message: "New JWT token generated",
+      token: newToken,
+      refreshToken: refreshToken,
+    });
+  });
+}catch (error) {
+  console.error(error);
+  res.status(500).json({message: "Server Error"})
+}
+};
+
+export { REGISTER_USER, LOGIN_USER, GET_NEW_JWT_TOKEN, };
