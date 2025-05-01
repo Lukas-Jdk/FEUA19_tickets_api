@@ -15,10 +15,9 @@ const REGISTER_USER = async (req, res) => {
       return res.status(400).json({ message: "Email must contain @" });
     }
     if (password.length < 6) {
-      return res
-        .status(400)
-        .json({ message: "Password must be at least 6 characters" });
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
     }
+    
     if (!/\d/.test(password)) {
       return res
         .status(400)
@@ -188,11 +187,8 @@ const BUY_TICKET = async (req, res) => {
     }
     // 4. Pridedu Ticket_ID prie User
     user.bought_tickets.push(ticket.id);
-
     // 5. Atimu ticket kaina is balanso
     user.money_balance -= ticket.ticket_price;
-
-    // 6. isaugau atnaujinta vartotoja
 
     await user.save();
 
@@ -207,7 +203,25 @@ const BUY_TICKET = async (req, res) => {
   }
 };
 
-
+const GET_ALL_USERS_WITH_TICKETS = async (req, res) => {
+  try {
+    const users = await User.aggregate([
+      {
+        $lookup: {
+          from: "tickets",
+          localField: "bought_tickets",
+          foreignField: "id",
+          as: "tickets_info",
+        },
+      },
+      { $sort: { name: 1 } },
+    ]);
+    res.status(200).json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 export {
   REGISTER_USER,
@@ -216,4 +230,5 @@ export {
   GET_ALL_USERS,
   GET_USER_BY_ID,
   BUY_TICKET,
+  GET_ALL_USERS_WITH_TICKETS
 };
