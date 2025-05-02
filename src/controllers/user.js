@@ -15,9 +15,11 @@ const REGISTER_USER = async (req, res) => {
       return res.status(400).json({ message: "Email must contain @" });
     }
     if (password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters" });
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
     }
-    
+
     if (!/\d/.test(password)) {
       return res
         .status(400)
@@ -166,33 +168,32 @@ const GET_USER_BY_ID = async (req, res) => {
 
 const BUY_TICKET = async (req, res) => {
   try {
-    // paiimu userio ir bilieto id
+   
     const { user_id, ticket_id } = req.body;
 
-    // 1. Ar Useris egzistuoja
     const user = await User.findOne({ id: user_id });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    // 2. Ar bilietas egzistuoja
+  
     const ticket = await Ticket.findOne({ id: ticket_id });
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
     }
 
-    // 3. Ar vartotojas turi pankamai saibu
+    
 
     if (user.money_balance < ticket.ticket_price) {
       return res.status(400).json({ message: "Not enough funds" });
     }
-    // 4. Pridedu Ticket_ID prie User
+   
     user.bought_tickets.push(ticket.id);
-    // 5. Atimu ticket kaina is balanso
+   
     user.money_balance -= ticket.ticket_price;
 
     await user.save();
 
-    // 7. grazinu atsakyma
+  
     res.status(200).json({
       message: "Ticket succesfully purchased",
       updated_user: user,
@@ -223,6 +224,35 @@ const GET_ALL_USERS_WITH_TICKETS = async (req, res) => {
   }
 };
 
+const GET_USER_BY_ID_WITH_TICKETS = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.aggregate([
+      {
+        $match: { id: id },
+      },
+      {
+        $lookup: {
+          from: "tickets",
+          localField: "bought_tickets",
+          foreignField: "id",
+          as: "tickets_info",
+        },
+      },
+    ]);
+
+    if (!user || user.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user[0]);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 export {
   REGISTER_USER,
   LOGIN_USER,
@@ -230,5 +260,6 @@ export {
   GET_ALL_USERS,
   GET_USER_BY_ID,
   BUY_TICKET,
-  GET_ALL_USERS_WITH_TICKETS
+  GET_ALL_USERS_WITH_TICKETS,
+  GET_USER_BY_ID_WITH_TICKETS
 };

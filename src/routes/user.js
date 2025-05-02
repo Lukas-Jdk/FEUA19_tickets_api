@@ -7,7 +7,8 @@ import {
   GET_ALL_USERS,
   GET_USER_BY_ID,
   BUY_TICKET,
-  GET_ALL_USERS_WITH_TICKETS
+  GET_ALL_USERS_WITH_TICKETS,
+  GET_USER_BY_ID_WITH_TICKETS
 } from "../controllers/user.js";
 
 
@@ -22,7 +23,6 @@ router.get("/users/:id", authUser, GET_USER_BY_ID);
 
 router.post("/buy-ticket", authUser, BUY_TICKET);
 router.get("/users-with-tickets", authUser, GET_ALL_USERS_WITH_TICKETS);
-
-
+router.get("/users/:id/tickets", authUser, GET_USER_BY_ID_WITH_TICKETS)
 
 export default router;
